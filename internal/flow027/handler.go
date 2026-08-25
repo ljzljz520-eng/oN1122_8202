@@ -7,8 +7,7 @@ import (
 )
 
 type Handler struct {
-	Store          *store.Store
-	lastPermission string
+	Store *store.Store
 }
 
 func NewHandler(s *store.Store) *Handler { return &Handler{Store: s} }
@@ -50,17 +49,7 @@ func (h *Handler) transition(id string, next domain.Status, actor, action string
 
 func (h *Handler) Get(id string) (domain.Record, error) { return h.Store.LoadRecord(id) }
 func (h *Handler) RefreshDetail(id string) (domain.Record, error) {
-	r, err := h.Store.LoadRecord(id)
-	if err != nil {
-		return domain.Record{}, err
-	}
-	if h.lastPermission != "" {
-		r.Permission = h.lastPermission
-		if saveErr := h.Store.SaveRecord(r); saveErr != nil {
-			return domain.Record{}, saveErr
-		}
-	}
-	return r, nil
+	return h.Store.LoadRecord(id)
 }
 func (h *Handler) UpdatePermission(id, permission string) (domain.Record, error) {
 	r, err := h.Store.LoadRecord(id)
@@ -71,7 +60,6 @@ func (h *Handler) UpdatePermission(id, permission string) (domain.Record, error)
 		return domain.Record{}, fmt.Errorf("record cannot be edited")
 	}
 	r.Permission = domain.NormalizePermission(permission)
-	h.lastPermission = r.Permission
 	r.Version++
 	r.UpdatedAt = "deterministic"
 	if err = h.Store.SaveRecord(r); err != nil {
